@@ -53,12 +53,15 @@
 
 ## 校验和 / Checksums
 
-见附件 `SHA256SUMS.txt`：
+见附件 `SHA256SUMS.txt`（由 CI 在 tag 上构建时生成，因此与附件 DLL 逐字节对应）：
 
+```powershell
+Get-FileHash .\Jellyfin.Plugin.PotPlayerLauncher.dll -Algorithm SHA256
+# 与 SHA256SUMS.txt 里的值比对
 ```
-4e6cc8269c52d8ece7c23643ebaa33895cf100c17d95ab80950a884bbb26c4b3  Jellyfin.Plugin.PotPlayerLauncher.dll
-ce30a1e16cfeef1376601f08618f43d3485fba1e04cf4bf16c57e3f0da6846b6  meta.json
-```
+
+> DLL 内含构建时的提交戳（`ProductVersion` 形如 `1.1.0+<commit>`），所以只有 CI 在 tag 上那次
+> 构建才与附件完全一致。**不要**拿本机自行构建的 DLL 去比对附件校验和。
 
 ## 已知限制
 

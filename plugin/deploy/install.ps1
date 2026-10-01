@@ -24,18 +24,23 @@
     Do not install anything. Instead build a release package for GitHub Releases:
     dist/Jellyfin.Plugin.PotPlayerLauncher.dll, dist/meta.json and a SHA256 checksum file.
 
+.PARAMETER EnableJellyfinDlls
+    Build against the Jellyfin NuGet packages instead of a local installation.
+    Use this in CI or on a machine without Jellyfin installed.
+
 .EXAMPLE
     .\install.ps1
     .\install.ps1 -DataDir "D:\JellyfinData"
     .\install.ps1 -JellyfinDir "D:\Jellyfin\Server"
-    .\install.ps1 -Package
+    .\install.ps1 -Package -EnableJellyfinDlls
 #>
 [CmdletBinding()]
 param(
     [string]$DataDir = "C:\ProgramData\Jellyfin\Server",
     [string]$JellyfinDir = "",
     [string]$Configuration = "Release",
-    [switch]$Package
+    [switch]$Package,
+    [switch]$EnableJellyfinDlls
 )
 
 $ErrorActionPreference = "Stop"
@@ -49,6 +54,7 @@ $targetDir = Join-Path $DataDir "plugins\$pluginName"
 Write-Host "==> Building ($Configuration)" -ForegroundColor Cyan
 $buildArgs = @("build", "-c", $Configuration, "--nologo")
 if ($JellyfinDir) { $buildArgs += "-p:JellyfinDir=$JellyfinDir" }
+if ($EnableJellyfinDlls) { $buildArgs += "-p:EnableJellyfinDlls=true" }
 Push-Location $projectDir
 try {
     & dotnet @buildArgs
