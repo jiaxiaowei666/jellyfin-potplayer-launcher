@@ -1,0 +1,55 @@
+<Project>
+
+  <!--
+    插件目录下所有工程共享的构建设置(MSBuild 会自动导入本文件)。
+    测试工程 plugin/tests 也依赖这些引用, 所以放在这里而不是各自的 csproj 里, 避免重复。
+  -->
+
+  <PropertyGroup>
+    <!-- Jellyfin 服务端安装目录; 装在别处时用环境变量覆盖, 例如 Linux: JellyfinDir=/usr/lib/jellyfin/ -->
+    <JellyfinDir Condition="'$(JellyfinDir)' == ''">C:\Program Files\Jellyfin\Server\</JellyfinDir>
+    <JellyfinDir>$([System.String]::Copy('$(JellyfinDir)').TrimEnd('\').TrimEnd('/'))</JellyfinDir>
+
+    <!-- 设为 true 则改用 NuGet 包引用, 完全不依赖本地安装(需联网还原, 版本需与目标服务器一致) -->
+    <EnableJellyfinDlls Condition="'$(EnableJellyfinDlls)' == ''">false</EnableJellyfinDlls>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(EnableJellyfinDlls)' != 'true'">
+    <!-- 直接引用服务器自带程序集, 保证与已安装版本 API 完全一致; Private=false 表示不复制到输出 -->
+    <Reference Include="MediaBrowser.Common">
+      <HintPath>$(JellyfinDir)\MediaBrowser.Common.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="MediaBrowser.Model">
+      <HintPath>$(JellyfinDir)\MediaBrowser.Model.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="MediaBrowser.Controller">
+      <HintPath>$(JellyfinDir)\MediaBrowser.Controller.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.Logging.Abstractions">
+      <HintPath>$(JellyfinDir)\Microsoft.Extensions.Logging.Abstractions.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.Hosting.Abstractions">
+      <HintPath>$(JellyfinDir)\Microsoft.Extensions.Hosting.Abstractions.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions">
+      <HintPath>$(JellyfinDir)\Microsoft.Extensions.DependencyInjection.Abstractions.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- 测试工程需要 new ServiceProvider(...); 插件本身只用抽象接口 -->
+    <Reference Include="Microsoft.Extensions.DependencyInjection">
+      <HintPath>$(JellyfinDir)\Microsoft.Extensions.DependencyInjection.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- 用于 AddHttpClient: 插件要回调 Jellyfin 自身 API 回传播放进度 -->
+    <Reference Include="Microsoft.Extensions.Http">
+      <HintPath>$(JellyfinDir)\Microsoft.Extensions.Http.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+</Project>

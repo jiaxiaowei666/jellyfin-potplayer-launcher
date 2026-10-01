@@ -235,14 +235,6 @@ public sealed class PotPlayerListener : IHostedService, IDisposable
             return;
         }
 
-        var playerPath = ResolvePlayerPath();
-        if (!File.Exists(playerPath))
-        {
-            _logger.LogWarning("PotPlayerLauncher rejected request. playerExists=false player={Player}", playerPath);
-            WriteJson(res, 403, "{\"ok\":false,\"error\":\"player not found\"}");
-            return;
-        }
-
         var apiKey = GetString(root, "apiKey");
         var userId = GetString(root, "userId");
         var itemId = GetString(root, "itemId");
@@ -253,6 +245,17 @@ public sealed class PotPlayerListener : IHostedService, IDisposable
         if (string.IsNullOrWhiteSpace(apiKey) || string.IsNullOrWhiteSpace(userId))
         {
             WriteJson(res, 400, "{\"ok\":false,\"error\":\"apiKey/userId required\"}");
+            return;
+        }
+
+        // 本地检查先做完再问 Jellyfin: 播放器不存在这类问题不必浪费一次网络往返
+        var playerPath = ResolvePlayerPath();
+        if (!File.Exists(playerPath))
+        {
+            _logger.LogWarning(
+                "PotPlayerLauncher rejected request. playerExists=false player={Player} (配置的 POTPLAYER_PATH 或 PotPlayerLauncher.json 指向了不存在的文件?)",
+                playerPath);
+            WriteJson(res, 403, "{\"ok\":false,\"error\":\"player not found\"}");
             return;
         }
 
@@ -701,14 +704,17 @@ public sealed class PotPlayerListener : IHostedService, IDisposable
     }
 
     /// <summary>
-    /// 允许通过 config/PotPlayerLauncher.json (PotPlayerPath) 或环境变量 POTPLAYER_PATH 覆盖播放器路径.
+    /// 解析播放器路径, 优先级: 环境变量 POTPLAYER_PATH &gt; config/PotPlayerLauncher.json 的
+    /// PotPlayerPath &gt; 内置默认值。
+    /// 注意: 这里**不做存在性判断**并回退——否则配置写错时会被默认值悄悄掩盖,
+    /// 最后报出的是 "默认路径不存在" 这种误导性错误。存在性由调用方检查。
     /// </summary>
     private string ResolvePlayerPath()
     {
         try
         {
             var env = Environment.GetEnvironmentVariable("POTPLAYER_PATH");
-            if (!string.IsNullOrWhiteSpace(env) && File.Exists(env))
+            if (!string.IsNullOrWhiteSpace(env))
             {
                 return env;
             }
@@ -735,7 +741,7 @@ public sealed class PotPlayerListener : IHostedService, IDisposable
                 if (doc.RootElement.TryGetProperty("PotPlayerPath", out var value))
                 {
                     var cfgPlayer = value.GetString();
-                    if (!string.IsNullOrWhiteSpace(cfgPlayer) && File.Exists(cfgPlayer))
+                    if (!string.IsNullOrWhiteSpace(cfgPlayer))
                     {
                         return cfgPlayer;
                     }

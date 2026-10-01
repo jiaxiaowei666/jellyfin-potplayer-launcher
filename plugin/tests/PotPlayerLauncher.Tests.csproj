@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    行为测试: 直接实例化插件的托管服务, 用真实 HTTP 请求跑一遍协议,
+    并用假播放器(.cmd 记录器)避免弹出真实窗口。详见 run-tests.ps1。
+    故意不用 xUnit: 保持零 NuGet 依赖, 离线可跑。
+    Jellyfin 程序集引用见上一级 Directory.Build.props。
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <AssemblyName>PotPlayerLauncher.Tests</AssemblyName>
+    <RootNamespace>PotPlayerLauncher.Tests</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PotPlayerLauncher.csproj" />
+  </ItemGroup>
+
+  <!--
+    插件里这些引用是 Private=false(由 Jellyfin 宿主提供), 但测试是独立进程, 必须复制到输出目录,
+    否则运行时报 FileNotFoundException。
+  -->
+  <ItemGroup>
+    <Reference Update="@(Reference)">
+      <Private>true</Private>
+    </Reference>
+  </ItemGroup>
+
+</Project>
