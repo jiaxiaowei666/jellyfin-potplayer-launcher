@@ -251,7 +251,10 @@ dotnet build -c Release
 
 - `cd plugin && dotnet build -c Release` 无警告无错误；
 - `cd plugin/tests && .\run-tests.ps1` 输出 `OK`；
-- 如果改了协议（`/token`、`/play` 的字段、状态码、错误标识），**先改 [`docs/PROTOCOL.md`](docs/PROTOCOL.md)**，再同步实现与测试。
+- 如果改了协议（`/token`、`/play` 的字段、状态码、错误标识），**先改 [`docs/PROTOCOL.md`](docs/PROTOCOL.md)**，再同步实现与测试；
+- 面向用户的改动请在 [`CHANGELOG.md`](CHANGELOG.md) 的 `Unreleased` 下记一行。
+
+版本号规则、三个版本号（协议 / 插件 / 脚本）的关系、以及完整发布流程见 [PROTOCOL.md 第 8 节](docs/PROTOCOL.md#8-版本协商)。
 
 ## License
 

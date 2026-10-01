@@ -244,7 +244,9 @@ Requires .NET SDK 9+. The build references the Jellyfin server assemblies from `
 
 ## Contributing
 
-Issues and PRs are welcome. Before submitting, please make sure `cd plugin && dotnet build -c Release` is clean and `cd plugin/tests && ./run-tests.ps1` prints `OK`. If you change the protocol (`/token`, the `/play` payload, status codes or error identifiers), update [`docs/PROTOCOL.md`](docs/PROTOCOL.md) **first**, then the implementation and the tests.
+Issues and PRs are welcome. Before submitting, please make sure `cd plugin && dotnet build -c Release` is clean and `cd plugin/tests && ./run-tests.ps1` prints `OK`. If you change the protocol (`/token`, the `/play` payload, status codes or error identifiers), update [`docs/PROTOCOL.md`](docs/PROTOCOL.md) **first**, then the implementation and the tests. User-visible changes should get a line under `Unreleased` in [`CHANGELOG.md`](CHANGELOG.md).
+
+Version numbering, how the three versions (protocol / plugin / userscript) relate, and the full release checklist are documented in [PROTOCOL.md section 8](docs/PROTOCOL.md#8-版本协商).
 
 ## License
 

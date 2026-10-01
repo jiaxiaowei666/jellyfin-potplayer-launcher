@@ -5,7 +5,7 @@
   "name": "PotPlayer Launcher",
   "owner": "local",
   "targetAbi": "10.11.11.0",
-  "version": "1.0.0.0",
+  "version": "1.1.0.0",
   "status": "Active",
   "autoUpdate": false,
   "assemblies": []

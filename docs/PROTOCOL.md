@@ -205,6 +205,8 @@ PotPlayer 自身的播放记忆与 Jellyfin 的续播位置互相独立，命令
 
 ## 8. 版本协商
 
+### 协议版本
+
 | `version` | 含义 |
 |---|---|
 | 缺失 / `1` | 旧协议：只有 `GET /play?path=`，无进度回传 |
@@ -215,3 +217,33 @@ PotPlayer 自身的播放记忆与 Jellyfin 的续播位置互相独立，命令
 - **加可选字段**：保持 `version` 不变，旧实现忽略未知字段即可
 - **改字段语义 / 删字段 / 改状态码**：必须递增 `version`，脚本按自己支持的版本降级
 - 脚本目前只用 `version` 区分"新旧监听器"，不做细粒度能力发现；将来加能力可扩展成 `capabilities: []` 数组
+
+### 三个版本号的关系
+
+仓库里有三个独立演进的版本号，**不要混淆**：
+
+| 版本号 | 在哪 | 何时递增 | 含义 |
+|---|---|---|---|
+| **协议版本** | `/token` 响应里的 `version` 字段 | 契约不兼容变更时 | 脚本与插件之间的接口版本 |
+| **插件版本** | `plugin/PotPlayerLauncher.csproj` 的 `VersionPrefix`、`plugin/deploy/meta.json` 的 `version`、DLL 文件版本 | 插件每次发布 | 遵循语义化版本;Jellyfin 用它判断是否需要更新 |
+| **脚本版本** | 油猴脚本头部的 `@version` | 脚本每次发布 | 遵循语义化版本;Tampermonkey 用它判断自动更新 |
+
+同一版本里只改一处是允许的：例如纯脚本改动不需要动插件版本，反之亦然。
+
+### 兼容性对照
+
+脚本对插件的依赖只有一个方向（脚本调用插件），记录在此以便排查"按钮没反应"类问题：
+
+| 脚本版本 | 支持的协议版本 | 遇到旧插件时的行为 |
+|---|---|---|
+| `1.0.0` | `2`（并兼容 `1`） | 探测 `/token` 返回 404/405 时自动退回 `GET /play?path=`：能播放，但没有进度回传，并在界面上提示"旧版插件" |
+
+### 发布流程
+
+1. 按语义化版本决定新版本号（新增功能 → `MINOR`，仅修复 → `PATCH`，破坏兼容 → `MAJOR`）
+2. 更新版本号：`plugin/PotPlayerLauncher.csproj` 的 `VersionPrefix`、`plugin/deploy/meta.json` 的 `version`；如果脚本有改动，同步脚本头部的 `@version`
+3. 在 [`CHANGELOG.md`](../CHANGELOG.md) 里把 `Unreleased` 的内容落到新版本标题下，并更新底部的比较链接
+4. 如果协议有**不兼容**变更，递增 `/token` 返回的 `version`，并在本文件里补一行对照
+5. 本地回归：`cd plugin && dotnet build -c Release`、`cd plugin/tests && ./run-tests.ps1` 都通过
+6. 提交、打 tag（`vX.Y.Z`）、推送；[CI](../.github/workflows/ci.yml) 会在两个平台上验证
+7. 在 GitHub 上把 tag 发布为 Release，必要时附上 `Jellyfin.Plugin.PotPlayerLauncher.dll` 与 `meta.json`

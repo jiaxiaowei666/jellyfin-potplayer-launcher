@@ -503,7 +503,7 @@ public sealed class PotPlayerListener : IHostedService, IDisposable
             request.Headers.TryAddWithoutValidation("X-Emby-Token", info.ApiKey);
             request.Headers.TryAddWithoutValidation(
                 "X-Emby-Authorization",
-                "MediaBrowser Client=\"PotPlayerLauncher\", Device=\"PotPlayerLauncher\", DeviceId=\"potplayer-launcher\", Version=\"1.0.0\"");
+                "MediaBrowser Client=\"PotPlayerLauncher\", Device=\"PotPlayerLauncher\", DeviceId=\"potplayer-launcher\", Version=\"1.1.0\"");
 
             using var response = await client.SendAsync(request).ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
