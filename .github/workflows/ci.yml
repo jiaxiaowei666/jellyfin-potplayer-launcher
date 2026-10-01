@@ -46,7 +46,9 @@ jobs:
 
       # 只上传 dist/*: 这样 artifact 解压出来就是三个文件, 不会多出
       # plugin/bin/Release/net9.0/ 这种目录层级(上传多个来源路径时 GitHub 会保留目录结构)。
+      # 必须与打包步骤同为"仅 tag"条件: dist/ 只在打包时产生, 否则分支上这一步会因为找不到文件而失败。
       - name: Upload release assets
+        if: startsWith(github.ref, 'refs/tags/v')
         uses: actions/upload-artifact@v4
         with:
           name: Jellyfin.Plugin.PotPlayerLauncher
