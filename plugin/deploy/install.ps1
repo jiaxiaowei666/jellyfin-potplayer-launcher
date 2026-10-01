@@ -24,6 +24,10 @@
     Do not install anything. Instead build a release package for GitHub Releases:
     dist/Jellyfin.Plugin.PotPlayerLauncher.dll, dist/meta.json and a SHA256 checksum file.
 
+.PARAMETER CopyDllToDist
+    With -Package, also copy the built dll into dist\ so that dist\ is a complete,
+    self-contained upload set (useful in CI: one upload path, no nested folders).
+
 .PARAMETER EnableJellyfinDlls
     Build against the Jellyfin NuGet packages instead of a local installation.
     Use this in CI or on a machine without Jellyfin installed.
@@ -32,7 +36,7 @@
     .\install.ps1
     .\install.ps1 -DataDir "D:\JellyfinData"
     .\install.ps1 -JellyfinDir "D:\Jellyfin\Server"
-    .\install.ps1 -Package -EnableJellyfinDlls
+    .\install.ps1 -Package -CopyDllToDist -EnableJellyfinDlls
 #>
 [CmdletBinding()]
 param(
@@ -40,6 +44,7 @@ param(
     [string]$JellyfinDir = "",
     [string]$Configuration = "Release",
     [switch]$Package,
+    [switch]$CopyDllToDist,
     [switch]$EnableJellyfinDlls
 )
 
@@ -67,15 +72,18 @@ $sourceDll = Join-Path $projectDir "bin\$Configuration\net9.0\$dllName"
 if (-not (Test-Path $sourceDll)) { throw "Build output not found: $sourceDll" }
 
 if ($Package) {
-    # Release packaging: only the two files a manual installer needs, plus checksums
+    # Release packaging: the two files a manual installer needs, plus checksums
     $distDir = Join-Path (Split-Path -Parent $projectDir) "dist"
     if (Test-Path $distDir) { Remove-Item $distDir -Recurse -Force }
     New-Item -ItemType Directory -Force -Path $distDir | Out-Null
 
-    Copy-Item $sourceDll (Join-Path $distDir $dllName) -Force
     Copy-Item (Join-Path $deployDir "meta.json") (Join-Path $distDir "meta.json") -Force
+    if ($CopyDllToDist) {
+        # CI 用: dist\ 自成一套上传内容, 上传路径只写 dist/* 即可(解压后就是三个文件, 没有子目录)
+        Copy-Item $sourceDll (Join-Path $distDir $dllName) -Force
+    }
 
-    $version = (Get-Item (Join-Path $distDir $dllName)).VersionInfo.FileVersion
+    $version = (Get-Item $sourceDll).VersionInfo.FileVersion
     $hashes = Get-ChildItem $distDir -File | ForEach-Object {
         "{0}  {1}" -f (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant(), $_.Name
     }

@@ -38,18 +38,19 @@ jobs:
       # 在 tag 上构建时额外产出发布资产(dll + meta.json + 校验和)。
       # 刻意由 CI 而不是本机打包: DLL 里带构建时的提交戳, 所以只有 CI 在 tag 上的构建
       # 才和 Actions 产物逐字节一致, 校验和才有意义。
+      # -CopyDllToDist 让 dist\ 自成一套上传内容, 解压后就是三个文件, 没有嵌套目录。
       - name: Package release assets
         if: startsWith(github.ref, 'refs/tags/v')
         shell: pwsh
-        run: ./plugin/deploy/install.ps1 -Package -EnableJellyfinDlls
+        run: ./plugin/deploy/install.ps1 -Package -CopyDllToDist -EnableJellyfinDlls
 
-      - name: Upload plugin dll
+      # 只上传 dist/*: 这样 artifact 解压出来就是三个文件, 不会多出
+      # plugin/bin/Release/net9.0/ 这种目录层级(上传多个来源路径时 GitHub 会保留目录结构)。
+      - name: Upload release assets
         uses: actions/upload-artifact@v4
         with:
           name: Jellyfin.Plugin.PotPlayerLauncher
-          path: |
-            plugin/bin/Release/net9.0/Jellyfin.Plugin.PotPlayerLauncher.dll
-            dist/*
+          path: dist/*
           if-no-files-found: error
 
       # 把校验和写进 Actions 摘要, 发布 Release 时直接复制
