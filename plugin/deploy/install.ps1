@@ -20,16 +20,22 @@
 .PARAMETER Configuration
     Build configuration. Default: Release.
 
+.PARAMETER Package
+    Do not install anything. Instead build a release package for GitHub Releases:
+    dist/Jellyfin.Plugin.PotPlayerLauncher.dll, dist/meta.json and a SHA256 checksum file.
+
 .EXAMPLE
     .\install.ps1
     .\install.ps1 -DataDir "D:\JellyfinData"
     .\install.ps1 -JellyfinDir "D:\Jellyfin\Server"
+    .\install.ps1 -Package
 #>
 [CmdletBinding()]
 param(
     [string]$DataDir = "C:\ProgramData\Jellyfin\Server",
     [string]$JellyfinDir = "",
-    [string]$Configuration = "Release"
+    [string]$Configuration = "Release",
+    [switch]$Package
 )
 
 $ErrorActionPreference = "Stop"
@@ -53,6 +59,30 @@ try {
 
 $sourceDll = Join-Path $projectDir "bin\$Configuration\net9.0\$dllName"
 if (-not (Test-Path $sourceDll)) { throw "Build output not found: $sourceDll" }
+
+if ($Package) {
+    # Release packaging: only the two files a manual installer needs, plus checksums
+    $distDir = Join-Path (Split-Path -Parent $projectDir) "dist"
+    if (Test-Path $distDir) { Remove-Item $distDir -Recurse -Force }
+    New-Item -ItemType Directory -Force -Path $distDir | Out-Null
+
+    Copy-Item $sourceDll (Join-Path $distDir $dllName) -Force
+    Copy-Item (Join-Path $deployDir "meta.json") (Join-Path $distDir "meta.json") -Force
+
+    $version = (Get-Item (Join-Path $distDir $dllName)).VersionInfo.FileVersion
+    $hashes = Get-ChildItem $distDir -File | ForEach-Object {
+        "{0}  {1}" -f (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant(), $_.Name
+    }
+    $hashes | Set-Content (Join-Path $distDir "SHA256SUMS.txt") -Encoding ascii
+
+    Write-Host "==> Package ready (plugin $version)" -ForegroundColor Green
+    Get-ChildItem $distDir -File | Select-Object Name, Length | Format-Table -AutoSize
+    Write-Host "Upload these files to the GitHub Release:"
+    Write-Host "  $distDir\$dllName"
+    Write-Host "  $distDir\meta.json"
+    Write-Host "  $distDir\SHA256SUMS.txt"
+    exit 0
+}
 
 Write-Host "==> Installing to $targetDir" -ForegroundColor Cyan
 New-Item -ItemType Directory -Force -Path $targetDir | Out-Null
