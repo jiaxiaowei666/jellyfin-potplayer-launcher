@@ -1,11 +1,11 @@
-// ==UserScript==
+﻿// ==UserScript==
 // @name         Jellyfin Local PotPlayer Button
 // @name:zh-CN   Jellyfin 本地 PotPlayer 按钮
-// @namespace    https://github.com/YOUR_GITHUB_USER/jellyfin-potplayer-launcher
+// @namespace    https://github.com/jiaxiaowei666/jellyfin-potplayer-launcher
 // @version      1.0.0
 // @description  Play in local PotPlayer from the Jellyfin web UI: resume from the server-side position and report playback progress back (no transcoding).
 // @description:zh-CN 在 Jellyfin 详情页添加「PotPlayer」按钮：本地 PotPlayer 播放，支持续播定位，并把播放进度回传给 Jellyfin（无转码）
-// @author       YOUR_NAME
+// @author       Xiaowei Jia
 // @match        http://localhost:8096/*
 // @match        http://127.0.0.1:8096/*
 // @grant        unsafeWindow

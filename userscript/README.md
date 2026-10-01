@@ -1,4 +1,4 @@
-# Jellyfin Local PotPlayer Button (userscript)
+﻿# Jellyfin Local PotPlayer Button (userscript)
 
 在 Jellyfin 网页详情页注入一个 **▶ PotPlayer** 按钮：本地播放，并且**把播放进度回传给 Jellyfin**（续播、播放次数、继续观看都正常）。
 
@@ -9,7 +9,7 @@
 安装 [Tampermonkey](https://www.tampermonkey.net/)（Chrome 需要打开"开发者模式"），然后打开：
 
 ```
-https://raw.githubusercontent.com/YOUR_GITHUB_USER/jellyfin-potplayer-launcher/main/userscript/jellyfin-potplayer-button.user.js
+https://raw.githubusercontent.com/jiaxiaowei666/jellyfin-potplayer-launcher/main/userscript/jellyfin-potplayer-button.user.js
 ```
 
 Tampermonkey 会弹出安装页。也可以新建脚本后把文件内容整段粘进去。

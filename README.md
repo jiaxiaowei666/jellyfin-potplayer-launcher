@@ -1,4 +1,4 @@
-# jellyfin-potplayer-launcher
+﻿# jellyfin-potplayer-launcher
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![Platform](https://img.shields.io/badge/platform-Windows-blue)
@@ -57,10 +57,10 @@ Process.Start("PotPlayerMini64.exe" "<文件路径>" "/seek=00:05:00")
 ### 第一步：安装油猴脚本（浏览器端）
 
 1. 装好 Tampermonkey（Chrome 需在 `chrome://extensions` 打开开发者模式）。
-2. 打开下面这个链接安装脚本（把 `YOUR_GITHUB_USER` 换成你的 GitHub 用户名）：
+2. 打开下面这个链接安装脚本（把 `jiaxiaowei666` 换成你的 GitHub 用户名）：
 
    ```
-   https://raw.githubusercontent.com/YOUR_GITHUB_USER/jellyfin-potplayer-launcher/main/userscript/jellyfin-potplayer-button.user.js
+   https://raw.githubusercontent.com/jiaxiaowei666/jellyfin-potplayer-launcher/main/userscript/jellyfin-potplayer-button.user.js
    ```
 
    Tampermonkey 会自动弹出安装页；也可以新建脚本后把文件内容整段粘进去。
@@ -71,7 +71,7 @@ Process.Start("PotPlayerMini64.exe" "<文件路径>" "/seek=00:05:00")
 **方式 A：一键脚本（推荐）**
 
 ```powershell
-git clone https://github.com/YOUR_GITHUB_USER/jellyfin-potplayer-launcher.git
+git clone https://github.com/jiaxiaowei666/jellyfin-potplayer-launcher.git
 cd jellyfin-potplayer-launcher\plugin\deploy
 powershell -ExecutionPolicy Bypass -File .\install.ps1
 # Jellyfin 数据目录不在默认位置时:
@@ -204,7 +204,7 @@ PotPlayerLauncher launched PotPlayer for "..." (pid=19816 startSec=0   seek="<no
 ## 从源码构建
 
 ```powershell
-git clone https://github.com/YOUR_GITHUB_USER/jellyfin-potplayer-launcher.git
+git clone https://github.com/jiaxiaowei666/jellyfin-potplayer-launcher.git
 cd jellyfin-potplayer-launcher\plugin
 dotnet build -c Release
 # 产物: bin\Release\net9.0\Jellyfin.Plugin.PotPlayerLauncher.dll

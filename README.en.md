@@ -1,4 +1,4 @@
-# jellyfin-potplayer-launcher
+﻿# jellyfin-potplayer-launcher
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![Platform](https://img.shields.io/badge/platform-Windows-blue)
@@ -55,10 +55,10 @@ Player exits → POST Sessions/Playing/Stopped (PositionTicks = played seconds)
 ### 1. Userscript (browser side)
 
 1. Install Tampermonkey (on Chrome, enable Developer mode in `chrome://extensions`).
-2. Open this URL (replace `YOUR_GITHUB_USER`):
+2. Open this URL (replace `jiaxiaowei666`):
 
    ```
-   https://raw.githubusercontent.com/YOUR_GITHUB_USER/jellyfin-potplayer-launcher/main/userscript/jellyfin-potplayer-button.user.js
+   https://raw.githubusercontent.com/jiaxiaowei666/jellyfin-potplayer-launcher/main/userscript/jellyfin-potplayer-button.user.js
    ```
 
    Tampermonkey will show its install page. You can also paste the file contents into a new script.
@@ -69,7 +69,7 @@ Player exits → POST Sessions/Playing/Stopped (PositionTicks = played seconds)
 **Option A — install script (recommended)**
 
 ```powershell
-git clone https://github.com/YOUR_GITHUB_USER/jellyfin-potplayer-launcher.git
+git clone https://github.com/jiaxiaowei666/jellyfin-potplayer-launcher.git
 cd jellyfin-potplayer-launcher\plugin\deploy
 powershell -ExecutionPolicy Bypass -File .\install.ps1
 # non-default data directory:
@@ -200,7 +200,7 @@ PotPlayerLauncher launched PotPlayer for "..." (pid=19816 startSec=0   seek="<no
 ## Build from source
 
 ```powershell
-git clone https://github.com/YOUR_GITHUB_USER/jellyfin-potplayer-launcher.git
+git clone https://github.com/jiaxiaowei666/jellyfin-potplayer-launcher.git
 cd jellyfin-potplayer-launcher\plugin
 dotnet build -c Release
 # output: bin\Release\net9.0\Jellyfin.Plugin.PotPlayerLauncher.dll
