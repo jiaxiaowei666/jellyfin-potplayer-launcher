@@ -1,0 +1,66 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <RootNamespace>Jellyfin.Plugin.PotPlayerLauncher</RootNamespace>
+    <AssemblyName>Jellyfin.Plugin.PotPlayerLauncher</AssemblyName>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <VersionPrefix>1.0.0</VersionPrefix>
+
+    <!--
+      Jellyfin 服务端安装目录, 默认是 Windows 常规路径。
+      装在别处时用环境变量覆盖, 例如 Linux:
+        JellyfinDir=/usr/lib/jellyfin/ dotnet build -c Release
+    -->
+    <JellyfinDir Condition="'$(JellyfinDir)' == ''">C:\Program Files\Jellyfin\Server\</JellyfinDir>
+    <JellyfinDir>$([System.String]::Copy('$(JellyfinDir)').TrimEnd('\').TrimEnd('/'))</JellyfinDir>
+
+    <!--
+      设为 true 则改用 NuGet 包引用, 完全不依赖本地安装(需联网还原, 版本需与目标服务器一致):
+        dotnet build -c Release -p:EnableJellyfinDlls=true
+    -->
+    <EnableJellyfinDlls Condition="'$(EnableJellyfinDlls)' == ''">false</EnableJellyfinDlls>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(EnableJellyfinDlls)' != 'true'">
+    <!-- 直接引用服务器自带程序集, 保证与已安装版本 API 完全一致; Private=false 表示不复制到输出 -->
+    <Reference Include="MediaBrowser.Common">
+      <HintPath>$(JellyfinDir)\MediaBrowser.Common.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="MediaBrowser.Model">
+      <HintPath>$(JellyfinDir)\MediaBrowser.Model.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="MediaBrowser.Controller">
+      <HintPath>$(JellyfinDir)\MediaBrowser.Controller.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.Logging.Abstractions">
+      <HintPath>$(JellyfinDir)\Microsoft.Extensions.Logging.Abstractions.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.Hosting.Abstractions">
+      <HintPath>$(JellyfinDir)\Microsoft.Extensions.Hosting.Abstractions.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions">
+      <HintPath>$(JellyfinDir)\Microsoft.Extensions.DependencyInjection.Abstractions.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- 用于 AddHttpClient: 插件要回调 Jellyfin 自身 API 回传播放进度 -->
+    <Reference Include="Microsoft.Extensions.Http">
+      <HintPath>$(JellyfinDir)\Microsoft.Extensions.Http.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(EnableJellyfinDlls)' == 'true'">
+    <PackageReference Include="Jellyfin.Controller" Version="10.11.11" />
+    <PackageReference Include="Jellyfin.Model" Version="10.11.11" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.0" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,12 @@
+{
+  "category": "General",
+  "description": "Local HTTP endpoint (127.0.0.1:13579) that launches PotPlayer for direct file playback and reports playback progress back to Jellyfin.",
+  "guid": "7f5b1d4a-3c2e-4f8b-9a6d-1e0c5b8d2f31",
+  "name": "PotPlayer Launcher",
+  "owner": "local",
+  "targetAbi": "10.11.11.0",
+  "version": "1.0.0.0",
+  "status": "Active",
+  "autoUpdate": false,
+  "assemblies": []
+}

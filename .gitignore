@@ -1,0 +1,18 @@
+# 构建产物
+bin/
+obj/
+*.user
+*.suo
+.vs/
+
+# 发布打包产物
+*.zip
+dist/
+
+# 部署时生成的文件 (含本次启动的临时 token, 不要提交)
+listener-token.txt
+
+# 编辑器/系统
+.idea/
+.DS_Store
+Thumbs.db
