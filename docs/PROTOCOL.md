@@ -83,7 +83,19 @@
 | `500` | `{"ok":false,"error":"failed to start player"}` | `Process.Start` 抛异常 |
 | `500` | `{"ok":false,"error":"internal error"}` | 未预期异常 |
 
-**校验顺序**（排查时按这个顺序看日志）：`Origin` → 路径识别 → token → 文件存在 → 播放器存在 → `apiKey`/`userId` 非空 → Jellyfin token 有效 → `userId` 匹配 → 启动播放器。
+**校验顺序**（本地检查先做完再问 Jellyfin，排查时按这个顺序看日志）：
+
+1. `Origin` 白名单
+2. `X-PotPlayer-Token`（本次启动的临时 token）
+3. JSON 可解析
+4. `path` 非空且文件存在
+5. `apiKey` / `userId` 非空
+6. 播放器 exe 存在
+7. 拿 `apiKey` 问 Jellyfin（`/Users/Me`，必要时退回 `/Users`）
+8. 声明的 `userId` 在 token 可见范围内
+9. 启动播放器
+
+第 4~6 步都是本地检查，故意排在网络请求（第 7 步）之前：配置错了能立刻报出准确原因，而不是先浪费一次往返、再报一个误导性的错误。
 
 **脚本侧约定**：收到 `404`/`405` 视为"插件是旧版本"，退回第 5 节的旧接口；收到 `401` 视为"临时 token 过期"，重新握手后**重试一次**。
 

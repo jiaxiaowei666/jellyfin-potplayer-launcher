@@ -1,4 +1,4 @@
-﻿# jellyfin-potplayer-launcher
+# jellyfin-potplayer-launcher
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![Platform](https://img.shields.io/badge/platform-Windows-blue)
@@ -181,21 +181,35 @@ PotPlayerLauncher launched PotPlayer for "..." (pid=19816 startSec=0   seek="<no
 
 ```
 .
+├── docs/
+│   └── PROTOCOL.md                  # contract between userscript and plugin
 ├── plugin/                          # Jellyfin server plugin (C# / net9.0)
-│   ├── PotPlayerLauncher.csproj
-│   ├── PotPlayerPlugin.cs
-│   ├── PluginServiceRegistrator.cs
+│   ├── Directory.Build.props         # JellyfinDir / EnableJellyfinDlls + assembly refs
 │   ├── PotPlayerListener.cs         # listener / auth / launch / progress reporting
+│   ├── tests/                        # 41 protocol checks, fake player recorder, no NuGet
 │   ├── deploy/
 │   │   ├── install.ps1              # build + install in one step
 │   │   └── meta.json                # plugin metadata required for manual install
-│   └── README.md                    # implementation notes (Chinese)
+│   └── README.md                    # implementation notes and test details (Chinese)
 ├── userscript/
 │   ├── jellyfin-potplayer-button.user.js
 │   └── README.md
 ├── LICENSE
 └── README.md / README.en.md
 ```
+
+## Tests
+
+```powershell
+cd plugin/tests
+.\run-tests.ps1          # 41 checks, ~30s, never opens a real player
+```
+
+The suite drives a real `HttpListener` over HTTP and covers the protocol contract in
+[`docs/PROTOCOL.md`](docs/PROTOCOL.md): handshake, auth, the Origin allowlist, CORS preflight,
+payload validation, the legacy `GET /play` endpoint, non-ASCII paths and port-conflict handling.
+The player is replaced by a small `.cmd` recorder that writes its own command line to a file,
+so the suite can assert what the plugin actually passed (for example the resume `/seek=00:05:00`).
 
 ## Build from source
 
@@ -210,7 +224,7 @@ Requires .NET SDK 9+. The build references the Jellyfin server assemblies from `
 
 ## Contributing
 
-Issues and PRs are welcome. Before submitting, please make sure `dotnet build -c Release` is clean, and if you change the protocol (`/token`, the `/play` payload) update `plugin/README.md` accordingly.
+Issues and PRs are welcome. Before submitting, please make sure `cd plugin && dotnet build -c Release` is clean and `cd plugin/tests && ./run-tests.ps1` prints `OK`. If you change the protocol (`/token`, the `/play` payload, status codes or error identifiers), update [`docs/PROTOCOL.md`](docs/PROTOCOL.md) **first**, then the implementation and the tests.
 
 ## License
 

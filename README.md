@@ -1,4 +1,4 @@
-﻿# jellyfin-potplayer-launcher
+# jellyfin-potplayer-launcher
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![Platform](https://img.shields.io/badge/platform-Windows-blue)
@@ -185,21 +185,35 @@ PotPlayerLauncher launched PotPlayer for "..." (pid=19816 startSec=0   seek="<no
 
 ```
 .
+├── docs/
+│   └── PROTOCOL.md                  # 脚本 ↔ 插件 的协议契约(唯一事实来源)
 ├── plugin/                          # Jellyfin 服务端插件 (C# / net9.0)
 │   ├── PotPlayerLauncher.csproj
+│   ├── Directory.Build.props         # JellyfinDir / EnableJellyfinDlls 与程序集引用
 │   ├── PotPlayerPlugin.cs           # 插件注册 (BasePlugin + SetAttributes/SetId)
 │   ├── PluginServiceRegistrator.cs   # 注册托管服务与 HttpClient
 │   ├── PotPlayerListener.cs          # 核心: 监听 13579 / 鉴权 / 启动播放器 / 回传进度
+│   ├── tests/                        # 协议行为测试(41 项, 假播放器记录器, 零 NuGet 依赖)
 │   ├── deploy/
 │   │   ├── install.ps1               # 一键构建并安装
 │   │   └── meta.json                 # 手工安装所需的插件元数据
-│   └── README.md                     # 插件内部实现细节 (开发笔记)
+│   └── README.md                     # 插件实现细节与测试说明
 ├── userscript/
 │   ├── jellyfin-potplayer-button.user.js
 │   └── README.md
 ├── LICENSE
 └── README.md / README.en.md
 ```
+
+## 测试
+
+```powershell
+cd plugin/tests
+.\run-tests.ps1          # 41 项检查, 约 30 秒, 不会弹出真实播放器
+```
+
+覆盖协议契约（握手、鉴权、Origin 白名单、CORS 预检、参数校验、旧接口兼容、中文路径、端口冲突降级）。
+测试用 `.cmd` 记录器替换播放器，因此能断言插件真正传给播放器的命令行参数（例如续播的 `/seek=00:05:00`）。
 
 ## 从源码构建
 
@@ -214,7 +228,11 @@ dotnet build -c Release
 
 ## 贡献
 
-欢迎 Issue / PR。提交前请确认：`dotnet build -c Release` 无警告无错误；如果你改了协议（`/token`、`/play` 的字段），请同步更新 `plugin/README.md` 以及"已验证行为"一节。
+欢迎 Issue / PR。提交前请确认：
+
+- `cd plugin && dotnet build -c Release` 无警告无错误；
+- `cd plugin/tests && .\run-tests.ps1` 输出 `OK`；
+- 如果改了协议（`/token`、`/play` 的字段、状态码、错误标识），**先改 [`docs/PROTOCOL.md`](docs/PROTOCOL.md)**，再同步实现与测试。
 
 ## License
 

@@ -13,12 +13,15 @@
 
 | 文件 | 职责 |
 |---|---|
-| `PotPlayerLauncher.csproj` | 类库定义；引用 Jellyfin 服务端官方 DLL（`Private=false`，不复制到输出），`JellyfinDir`/`EnableJellyfinDlls` 可覆盖 |
+| `PotPlayerLauncher.csproj` | 类库定义；`JellyfinDir`/`EnableJellyfinDlls` 与 Jellyfin 程序集引用见同目录 `Directory.Build.props` |
 | `PotPlayerPlugin.cs` | 插件注册类，继承 `BasePlugin`；必须手动调用 `SetAttributes()` + `SetId()`（见"开发要点"） |
 | `PluginServiceRegistrator.cs` | 实现 `IPluginServiceRegistrator`（要求无参构造），注册 `AddHttpClient`（回调 Jellyfin API 用）与监听器托管服务 |
 | `PotPlayerListener.cs` | 核心逻辑：`HttpListener` 监听 13579、CORS/token 校验、启动播放器、跟踪进程并回传进度 |
+| `tests/` | 协议行为测试（真 HTTP + 假播放器记录器），见下文 |
 | `deploy/install.ps1` | 构建 + 安装到 Jellyfin 插件目录 |
 | `deploy/meta.json` | 手工安装所需的插件元数据模板（`guid` 必须与代码里的 `PluginGuid` 一致） |
+
+协议契约（字段、状态码、错误标识、进度规则、版本协商）见 [`../docs/PROTOCOL.md`](../docs/PROTOCOL.md) —— 改协议必须先改那份文档。
 
 ## 接口
 
@@ -104,21 +107,38 @@ dotnet build -c Release -p:EnableJellyfinDlls=true
 | 监听端口 | 环境变量 `POTPLAYER_LAUNCHER_PORT` | 默认 13579；改了端口油猴脚本的 `LISTENER` 要同步 |
 | 临时 token | `plugins\PotPlayerLauncher\listener-token.txt` | 只读参考，每次重启都会变 |
 
-## 已验证行为
+## 自动化测试
 
-本机 Windows + Jellyfin 10.11.11 实测：
+协议契约与回归测试在 [`tests/`](tests/)：
+
+```powershell
+cd plugin/tests
+.\run-tests.ps1          # 41 项检查, 约 30 秒
+```
+
+- 真起一个 `HttpListener`，用真实 HTTP 请求覆盖 `docs/PROTOCOL.md` 里的每条规则
+- **播放器被换成一个 `.cmd` 记录器**：它把自己的命令行写进文件后立刻退出，所以既能断言插件到底传了什么（例如续播的 `/seek=00:05:00`），又不会弹出真实播放器
+- 零 NuGet 依赖（没用 xUnit），离线可跑；测试工程必须引用 Jellyfin 服务端程序集，构建方式与插件一致
+- 需要真实服务器的用例默认跳过，设置 `POTPLAYER_TEST_JELLYFIN_URL` / `_USER_TOKEN` / `_USER_ID` 后启用
+
+写测试时踩到的两个坑（已固化在注释里）：
+
+1. **`.NET` 的环境变量是进程启动时缓存的**，`Environment.SetEnvironmentVariable` 不会改变本进程后续 `GetEnvironmentVariable` 的返回值。所以测试不能靠 `POTPLAYER_PATH` 指定播放器，必须走每次请求都重新读取的 `PotPlayerLauncher.json`。
+2. **不要断言"本机没有 Jellyfin"**：开发机上很可能真的跑着一个。测试对这种情况做分支处理（401 或 403 都接受），只强制要求"被拒绝时没有启动播放器"。
+
+## 本机实测记录
+
+以下是部署到真实 Jellyfin 后手工验证过的行为（Windows + 10.11.11，真实 PotPlayer 与真实影片）：
 
 | 场景 | 结果 |
 |---|---|
-| `POST /play` 无 token / 错 token | 401 `invalid token` |
-| `GET /token` 本机 Origin / 外来 Origin | 200 / 403（后者不下发 CORS 头） |
-| `OPTIONS /play` 预检 | 204，允许 `X-PotPlayer-Token` |
-| 真 token + 文件不存在 / Jellyfin token 无效 / userId 不符 | 403 / 401 / 403，错误信息区分明确 |
-| 会话 token + 真实影片 | 200 `{"ok":true,"pid":N}`，PotPlayer 打开该文件（中文路径正常） |
-| 播放 40 秒后关闭播放器 | `reported progress ... position=40s (HTTP 204)`，条目 `pos=40s, Played=False, PlayCount+1` |
+| 播放 40 秒后关闭播放器 | 日志 `reported progress ... position=40s (HTTP 204)`，条目 `pos=40s, Played=False, PlayCount+1` |
 | 播放 3 秒后关闭播放器 | `playback too short to report (3s < 20s)`，不回传 |
-| 传 API 密钥 | 能播，但日志警告进度不会入库（实测位置确实未变） |
-| 续播参数 | 日志出现 `startSec=300 seek="/seek=00:05:00"` |
+| 传 API 密钥（无用户上下文） | 能播，但日志警告进度不会入库；实测条目位置确实未变 |
+| 一次 `startSec=300` 一次 `startSec=0` | 日志分别为 `seek="/seek=00:05:00"` 与 `seek="<none>"`，可据此区分续播来源 |
+| 中文路径 | 正常，日志中路径完整无乱码 |
+
+其余协议行为（鉴权、Origin、预检、参数校验、旧接口兼容、端口冲突）由上面的自动化测试覆盖。
 
 ## License
 
