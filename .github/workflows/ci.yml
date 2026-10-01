@@ -1,0 +1,58 @@
+name: build-and-test
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+# 取消同一分支上还在跑的旧任务
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Windows: 完整构建 + 协议行为测试
+  # (测试用 .cmd 假播放器替换真实播放器, 因此只在 Windows 上有意义)
+  test:
+    name: build + tests (windows)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.0.x"
+
+      # -EnableJellyfinDlls: 用 NuGet 上的 Jellyfin 包, 不依赖 runner 上装了 Jellyfin。
+      # 这一步同时完成构建与测试(测试工程引用插件工程)。
+      - name: Build and run behaviour tests
+        shell: pwsh
+        run: ./plugin/tests/run-tests.ps1 -EnableJellyfinDlls
+
+      # 注意: 仓库根目录没有项目文件, 必须指定 plugin 目录
+      - name: Build plugin (Release)
+        run: dotnet build plugin -c Release --nologo -p:EnableJellyfinDlls=true
+
+      - name: Upload plugin dll
+        uses: actions/upload-artifact@v4
+        with:
+          name: Jellyfin.Plugin.PotPlayerLauncher
+          path: plugin/bin/Release/net9.0/Jellyfin.Plugin.PotPlayerLauncher.dll
+          if-no-files-found: error
+
+  # Linux: 只验证编译, 用来尽早发现宿主 API 变化 / 目标框架漂移。
+  # 插件运行期依赖 Windows(桌面播放器 + Windows 路径), 所以这里不跑测试。
+  build-linux:
+    name: build (linux, compile only)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.0.x"
+
+      - name: Build plugin
+        run: dotnet build plugin -c Release --nologo -p:EnableJellyfinDlls=true

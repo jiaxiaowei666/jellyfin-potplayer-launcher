@@ -10,13 +10,10 @@
     <VersionPrefix>1.0.0</VersionPrefix>
   </PropertyGroup>
 
-  <!-- Jellyfin 程序集引用与 JellyfinDir/EnableJellyfinDlls 见同目录 Directory.Build.props -->
-
-  <ItemGroup Condition="'$(EnableJellyfinDlls)' == 'true'">
-    <PackageReference Include="Jellyfin.Controller" Version="10.11.11" />
-    <PackageReference Include="Jellyfin.Model" Version="10.11.11" />
-    <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.0" />
-  </ItemGroup>
+  <!--
+    Jellyfin 程序集 / NuGet 包引用, 以及 JellyfinDir、EnableJellyfinDlls、包版本
+    都集中在同目录的 Directory.Build.props。
+  -->
 
   <!-- 测试工程有自己的 csproj, 不要被插件的默认通配符一起编译 -->
   <ItemGroup>

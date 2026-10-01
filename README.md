@@ -1,5 +1,6 @@
 # jellyfin-potplayer-launcher
 
+[![build-and-test](https://github.com/jiaxiaowei666/jellyfin-potplayer-launcher/actions/workflows/ci.yml/badge.svg)](https://github.com/jiaxiaowei666/jellyfin-potplayer-launcher/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![Platform](https://img.shields.io/badge/platform-Windows-blue)
 ![Jellyfin](https://img.shields.io/badge/Jellyfin-10.11.x-00A4DC)
@@ -193,7 +194,7 @@ PotPlayerLauncher launched PotPlayer for "..." (pid=19816 startSec=0   seek="<no
 │   ├── PotPlayerPlugin.cs           # 插件注册 (BasePlugin + SetAttributes/SetId)
 │   ├── PluginServiceRegistrator.cs   # 注册托管服务与 HttpClient
 │   ├── PotPlayerListener.cs          # 核心: 监听 13579 / 鉴权 / 启动播放器 / 回传进度
-│   ├── tests/                        # 协议行为测试(41 项, 假播放器记录器, 零 NuGet 依赖)
+│   ├── tests/                        # 协议行为测试(41 项, 假播放器记录器, 无需测试框架)
 │   ├── deploy/
 │   │   ├── install.ps1               # 一键构建并安装
 │   │   └── meta.json                 # 手工安装所需的插件元数据
@@ -214,6 +215,24 @@ cd plugin/tests
 
 覆盖协议契约（握手、鉴权、Origin 白名单、CORS 预检、参数校验、旧接口兼容、中文路径、端口冲突降级）。
 测试用 `.cmd` 记录器替换播放器，因此能断言插件真正传给播放器的命令行参数（例如续播的 `/seek=00:05:00`）。
+
+没装 Jellyfin 的机器（或 CI）加一个参数即可改用 NuGet 包构建：
+
+```powershell
+.\run-tests.ps1 -EnableJellyfinDlls
+```
+
+## 持续集成
+
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) 在两个平台上跑：
+
+| Job | 平台 | 内容 |
+|---|---|---|
+| `test` | windows-latest | 构建插件 + 跑完整测试套件（41 项），并上传插件 DLL 作为 artifact |
+| `build-linux` | ubuntu-latest | 只验证编译，尽早发现宿主 API 变化 / 目标框架漂移（运行期依赖 Windows，所以不跑测试） |
+
+两个 job 都用 `-p:EnableJellyfinDlls=true`，即从 NuGet 拉 Jellyfin 包，不依赖 runner 上装了 Jellyfin。
+CI 能防住的典型问题：Jellyfin 升级后宿主 API 变了导致插件编译失败——会在你自己的仓库里先炸，而不是等用户报错。
 
 ## 从源码构建
 

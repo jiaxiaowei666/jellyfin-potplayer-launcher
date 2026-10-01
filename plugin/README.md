@@ -118,7 +118,7 @@ cd plugin/tests
 
 - 真起一个 `HttpListener`，用真实 HTTP 请求覆盖 `docs/PROTOCOL.md` 里的每条规则
 - **播放器被换成一个 `.cmd` 记录器**：它把自己的命令行写进文件后立刻退出，所以既能断言插件到底传了什么（例如续播的 `/seek=00:05:00`），又不会弹出真实播放器
-- 零 NuGet 依赖（没用 xUnit），离线可跑；测试工程必须引用 Jellyfin 服务端程序集，构建方式与插件一致
+- **不用 xUnit 等测试框架**（保持离线可跑、输出直白）；但测试工程同样需要 Jellyfin 程序集，没装 Jellyfin 的机器用 `.\run-tests.ps1 -EnableJellyfinDlls` 改走 NuGet 包
 - 需要真实服务器的用例默认跳过，设置 `POTPLAYER_TEST_JELLYFIN_URL` / `_USER_TOKEN` / `_USER_ID` 后启用
 
 写测试时踩到的两个坑（已固化在注释里）：

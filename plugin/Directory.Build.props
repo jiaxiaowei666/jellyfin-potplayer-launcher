@@ -12,7 +12,22 @@
 
     <!-- 设为 true 则改用 NuGet 包引用, 完全不依赖本地安装(需联网还原, 版本需与目标服务器一致) -->
     <EnableJellyfinDlls Condition="'$(EnableJellyfinDlls)' == ''">false</EnableJellyfinDlls>
+
+    <!--
+      NuGet 模式下集中管理包版本, 避免插件与测试两个工程各写版本导致 NU1605 降级错误。
+      Microsoft.Extensions.Http 9.0.0 会传递引入 Logging 9.0.11 → DependencyInjection >= 9.0.11,
+      所以这里必须用 9.0.11, 写 9.0.0 会被判为降级。
+    -->
+    <JellyfinPackageVersion Condition="'$(JellyfinPackageVersion)' == ''">10.11.11</JellyfinPackageVersion>
+    <ExtensionsPackageVersion Condition="'$(ExtensionsPackageVersion)' == ''">9.0.11</ExtensionsPackageVersion>
   </PropertyGroup>
+
+  <ItemGroup Condition="'$(EnableJellyfinDlls)' == 'true'">
+    <PackageReference Include="Jellyfin.Controller" Version="$(JellyfinPackageVersion)" />
+    <PackageReference Include="Jellyfin.Model" Version="$(JellyfinPackageVersion)" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="$(ExtensionsPackageVersion)" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="$(ExtensionsPackageVersion)" />
+  </ItemGroup>
 
   <ItemGroup Condition="'$(EnableJellyfinDlls)' != 'true'">
     <!-- 直接引用服务器自带程序集, 保证与已安装版本 API 完全一致; Private=false 表示不复制到输出 -->

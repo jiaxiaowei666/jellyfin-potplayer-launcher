@@ -17,15 +17,21 @@
     and would garble non-ASCII text.
 
 .PARAMETER JellyfinDir
-    Jellyfin server install directory used for compilation.
+    Jellyfin server install directory used for compilation (default: the Windows install path).
+
+.PARAMETER EnableJellyfinDlls
+    Reference the Jellyfin NuGet packages instead of a local server installation.
+    Use this on machines (or CI runners) that do not have Jellyfin installed.
 
 .EXAMPLE
     .\run-tests.ps1
     .\run-tests.ps1 -JellyfinDir "D:\Jellyfin\Server"
+    .\run-tests.ps1 -EnableJellyfinDlls
 #>
 [CmdletBinding()]
 param(
-    [string]$JellyfinDir = ""
+    [string]$JellyfinDir = "",
+    [switch]$EnableJellyfinDlls
 )
 
 $ErrorActionPreference = "Stop"
@@ -36,6 +42,7 @@ $runArgs = @(
     "--nologo"
 )
 if ($JellyfinDir) { $runArgs += "-p:JellyfinDir=$JellyfinDir" }
+if ($EnableJellyfinDlls) { $runArgs += "-p:EnableJellyfinDlls=true" }
 
 # Allow rolling forward when only a newer major runtime is installed (e.g. .NET 10 but not 9)
 $hasNet9 = (dotnet --list-runtimes) | Select-String -Quiet "Microsoft\.NETCore\.App 9\."

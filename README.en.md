@@ -1,5 +1,6 @@
 # jellyfin-potplayer-launcher
 
+[![build-and-test](https://github.com/jiaxiaowei666/jellyfin-potplayer-launcher/actions/workflows/ci.yml/badge.svg)](https://github.com/jiaxiaowei666/jellyfin-potplayer-launcher/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![Platform](https://img.shields.io/badge/platform-Windows-blue)
 ![Jellyfin](https://img.shields.io/badge/Jellyfin-10.11.x-00A4DC)
@@ -210,6 +211,25 @@ The suite drives a real `HttpListener` over HTTP and covers the protocol contrac
 payload validation, the legacy `GET /play` endpoint, non-ASCII paths and port-conflict handling.
 The player is replaced by a small `.cmd` recorder that writes its own command line to a file,
 so the suite can assert what the plugin actually passed (for example the resume `/seek=00:05:00`).
+
+On a machine without Jellyfin installed (or in CI), add a switch to build against the NuGet packages instead:
+
+```powershell
+.\run-tests.ps1 -EnableJellyfinDlls
+```
+
+## Continuous integration
+
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs two jobs:
+
+| Job | Runner | What it does |
+|---|---|---|
+| `test` | windows-latest | Builds the plugin, runs the full 41-check suite, uploads the plugin DLL as an artifact |
+| `build-linux` | ubuntu-latest | Compile-only, to catch host API changes / target-framework drift early (runtime is Windows-only, so no tests) |
+
+Both jobs pass `-p:EnableJellyfinDlls=true`, i.e. they pull the Jellyfin packages from NuGet instead of
+requiring a Jellyfin installation on the runner. The main thing CI catches: a Jellyfin upgrade that
+changes host APIs breaks the build in your own repository instead of on a user's machine.
 
 ## Build from source
 

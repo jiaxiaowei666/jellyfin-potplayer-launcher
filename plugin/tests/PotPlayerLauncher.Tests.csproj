@@ -3,8 +3,8 @@
   <!--
     行为测试: 直接实例化插件的托管服务, 用真实 HTTP 请求跑一遍协议,
     并用假播放器(.cmd 记录器)避免弹出真实窗口。详见 run-tests.ps1。
-    故意不用 xUnit: 保持零 NuGet 依赖, 离线可跑。
-    Jellyfin 程序集引用见上一级 Directory.Build.props。
+    故意不用 xUnit: 零测试框架依赖, 离线可跑, 也方便在 CI 里直接看输出。
+    Jellyfin 程序集/包引用见上一级 Directory.Build.props。
   -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
