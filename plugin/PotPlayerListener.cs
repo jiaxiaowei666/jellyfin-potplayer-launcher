@@ -35,6 +35,12 @@ public sealed class PotPlayerListener : IHostedService, IDisposable
     /// <summary>播放中向 Jellyfin 发送心跳 (Sessions/Playing/Progress) 的间隔.</summary>
     private static readonly TimeSpan HeartbeatInterval = TimeSpan.FromSeconds(15);
 
+    /// <summary>
+    /// 向播放器窗口查询实时位置的间隔。比心跳更密: 心跳决定"多久告诉 Jellyfin 一次",
+    /// 这里决定"最后一次读数有多新", 关系到强杀播放器时能回传多准。
+    /// </summary>
+    private static readonly TimeSpan PositionProbeInterval = TimeSpan.FromSeconds(2);
+
     private static readonly Regex PathRegex = new("[?&]path=([^&]+)", RegexOptions.Compiled);
 
     /// <summary>只放行本机 Jellyfin 页面作为 Origin (任意端口).</summary>
@@ -45,6 +51,7 @@ public sealed class PotPlayerListener : IHostedService, IDisposable
     private readonly ILogger<PotPlayerListener> _logger;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IApplicationPaths _applicationPaths;
+    private readonly IPlayerPositionProbe _positionProbe;
     private readonly CancellationTokenSource _stoppingCts = new();
 
     /// <summary>每次服务器启动随机生成, 只有同源的本机页面能通过 /token 取到.</summary>
@@ -58,10 +65,21 @@ public sealed class PotPlayerListener : IHostedService, IDisposable
         ILogger<PotPlayerListener> logger,
         IHttpClientFactory httpClientFactory,
         IApplicationPaths applicationPaths)
+        : this(logger, httpClientFactory, applicationPaths, new PotPlayerWindowProbe(m => logger.LogDebug("PotPlayerLauncher probe: {Trace}", m)))
+    {
+    }
+
+    /// <summary>测试可注入自定义探针(或用它模拟"窗口消息查不到"的降级路径)。</summary>
+    public PotPlayerListener(
+        ILogger<PotPlayerListener> logger,
+        IHttpClientFactory httpClientFactory,
+        IApplicationPaths applicationPaths,
+        IPlayerPositionProbe positionProbe)
     {
         _logger = logger;
         _httpClientFactory = httpClientFactory;
         _applicationPaths = applicationPaths;
+        _positionProbe = positionProbe;
     }
 
     public Task StartAsync(CancellationToken cancellationToken)
@@ -383,8 +401,9 @@ public sealed class PotPlayerListener : IHostedService, IDisposable
     }
 
     /// <summary>
-    /// 等待播放器退出, 期间按心跳上报进度, 退出后回传最终位置.
-    /// 无法读取播放器内部进度, 因此用"进程存活时长"作为播放位置 (暂停会略偏低).
+    /// 等待播放器退出, 期间上报进度, 退出后回传最终位置。
+    /// 位置优先取自 <see cref="IPlayerPositionProbe"/>(PotPlayer 窗口消息, 暂停不增长);
+    /// 探针拿不到时退回"起播位置 + 进程存活时长"的估算(暂停会让估算偏高, 这是已知取舍)。
     /// </summary>
     private async Task TrackPlaybackAsync(Process? player, PlaybackReport info)
     {
@@ -396,21 +415,25 @@ public sealed class PotPlayerListener : IHostedService, IDisposable
         var startedAt = DateTime.UtcNow;
         var playSessionId = Guid.NewGuid().ToString("N");
         var stopped = false;
+        var probeHit = false;
+        long? lastGoodPosition = null;
 
         try
         {
             await ReportAsync(info, "Playing", info.StartSec, playSessionId).ConfigureAwait(false);
 
+            var nextReportAt = DateTime.UtcNow + HeartbeatInterval;
+
             while (!player.HasExited)
             {
                 try
                 {
-                    using var beatCts = new CancellationTokenSource(HeartbeatInterval);
-                    await player.WaitForExitAsync(beatCts.Token).ConfigureAwait(false);
+                    using var tickCts = new CancellationTokenSource(PositionProbeInterval);
+                    await player.WaitForExitAsync(tickCts.Token).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException)
                 {
-                    // 心跳超时 = 播放器仍在播放
+                    // 到点了 = 播放器仍在播放, 继续这一轮
                 }
 
                 if (player.HasExited)
@@ -418,7 +441,21 @@ public sealed class PotPlayerListener : IHostedService, IDisposable
                     break;
                 }
 
-                var position = (long)(DateTime.UtcNow - startedAt).TotalSeconds + info.StartSec;
+                var elapsed = (long)(DateTime.UtcNow - startedAt).TotalSeconds;
+                var probed = _positionProbe.TryGetPositionSeconds(player.Id);
+                if (PlayerPositionPolicy.IsTrustworthy(probed, info.StartSec, elapsed))
+                {
+                    lastGoodPosition = probed;
+                    probeHit = true;
+                }
+
+                if (DateTime.UtcNow < nextReportAt)
+                {
+                    continue;
+                }
+
+                nextReportAt = DateTime.UtcNow + HeartbeatInterval;
+                var position = lastGoodPosition ?? (info.StartSec + elapsed);
                 await ReportAsync(info, "Progress", position, playSessionId).ConfigureAwait(false);
             }
 
@@ -431,11 +468,28 @@ public sealed class PotPlayerListener : IHostedService, IDisposable
         finally
         {
             var elapsed = (long)(DateTime.UtcNow - startedAt).TotalSeconds;
-            var position = info.StartSec + elapsed;
+
+            // 探针有有效读数就用它(精确, 且不受暂停影响); 否则用估算
+            var finalPosition = lastGoodPosition ?? (info.StartSec + elapsed);
 
             if (stopped && elapsed >= MinReportSeconds)
             {
-                await ReportAsync(info, "Stopped", position, playSessionId).ConfigureAwait(false);
+                if (probeHit)
+                {
+                    _logger.LogInformation(
+                        "PotPlayerLauncher: final position from window probe: {Position}s for {Item}",
+                        finalPosition,
+                        info.ItemId);
+                }
+                else
+                {
+                    _logger.LogInformation(
+                        "PotPlayerLauncher: window probe unavailable, reporting estimated position {Position}s for {Item}",
+                        finalPosition,
+                        info.ItemId);
+                }
+
+                await ReportAsync(info, "Stopped", finalPosition, playSessionId).ConfigureAwait(false);
             }
             else if (stopped)
             {
@@ -503,7 +557,7 @@ public sealed class PotPlayerListener : IHostedService, IDisposable
             request.Headers.TryAddWithoutValidation("X-Emby-Token", info.ApiKey);
             request.Headers.TryAddWithoutValidation(
                 "X-Emby-Authorization",
-                "MediaBrowser Client=\"PotPlayerLauncher\", Device=\"PotPlayerLauncher\", DeviceId=\"potplayer-launcher\", Version=\"1.1.0\"");
+                "MediaBrowser Client=\"PotPlayerLauncher\", Device=\"PotPlayerLauncher\", DeviceId=\"potplayer-launcher\", Version=\"1.2.0\"");
 
             using var response = await client.SendAsync(request).ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)

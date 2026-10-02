@@ -51,5 +51,9 @@ if (-not $hasNet9) {
     $env:DOTNET_ROLL_FORWARD = "Major"
 }
 
+# The fake player sleeps this long inside the .cmd recorder, so the position probe and the
+# progress heartbeat have time to produce readings. Tests finish well before it elapses.
+if (-not $env:POTPLAYER_TEST_PLAYER_SECONDS) { $env:POTPLAYER_TEST_PLAYER_SECONDS = "60" }
+
 & dotnet @runArgs
 exit $LASTEXITCODE

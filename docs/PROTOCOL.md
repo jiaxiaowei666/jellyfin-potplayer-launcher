@@ -170,18 +170,33 @@ Header: X-PotPlayer-Token: <token>
 
 body 字段：`ItemId`、`MediaSourceId`、`PlaySessionId`（插件为每次播放生成）、`PositionTicks`、`CanSeek`、`IsPaused`、`IsMuted`、`PlayMethod=DirectStream`、`RepeatMode=RepeatNone`；心跳额外带 `EventName=timeupdate`。
 
-**位置取值规则**（改这里要特别小心，它决定条目会不会被判成"已看完"）：
+### 位置从哪来
+
+插件每 **2 秒**向播放器窗口要一次实时时间码（PotPlayer 主窗口类 `PotPlayer64`，`WM_USER(0x400)` + wParam `0x5004` 返回当前毫秒数），并缓存为"最后一次有效位置"。
+
+**可信度判定**（`PlayerPositionPolicy`，与 P/Invoke 分离以便单测）：读数必须非空、非负，且不超过 `startSec + 存活时长 + 120s` —— 最后一条用来挡掉"窗口句柄对上了另一个 PotPlayer 实例"这类串台。
+
+上报时取值：
 
 ```
-pos = startSec + (播放器退出时刻 - 启动时刻).TotalSeconds
+position = 最后一次可信的探针读数       (正常)
+         = startSec + 进程存活秒数     (探针不可用时降级)
+```
+
+**安全边界**（改这里要特别小心，它决定条目会不会被判成"已看完"）：
+
+```
 pos = max(0, pos)
 if (totalSec > 0) pos = min(pos, totalSec - 10)
-if (pos 对应的播放时长 < 20s) 不发 Stopped
+if (播放时长 < 20s) 不发 Stopped
 ```
 
-- 暂停期间也在计时 → 暂停多时回传位置偏高（已知取舍）
+- 探针可用时**暂停不会让位置增长**；探针不可用时退回估算，暂停会让估算偏高（已知取舍）
+- 播放器被强杀/崩溃也能回传到最后一次探针读数（最多滞后 2 秒）
 - `位置 = 总时长 - 10` 是刻意留的安全边界，避免触发 Jellyfin 的"已看完"判定
 - 播放不足 20 秒不回传，避免误点污染观看记录
+
+> PotPlayer 自身也记进度（写在 `%APPDATA%\PotPlayerMini64\Playlist\PotPlayerMini64.dpl`，键是文件路径，**正常退出时**才写），与本协议无关，两者互不干扰。
 
 ---
 
@@ -210,7 +225,7 @@ PotPlayer 自身的播放记忆与 Jellyfin 的续播位置互相独立，命令
 | `version` | 含义 |
 |---|---|
 | 缺失 / `1` | 旧协议：只有 `GET /play?path=`，无进度回传 |
-| `2` | 当前协议：`/token` + `POST /play` + 进度回传 |
+| `2` | 当前协议：`/token` + `POST /play` + 进度回传（位置优先取自播放器窗口探针，失败退回存活时长估算） |
 
 约定：
 

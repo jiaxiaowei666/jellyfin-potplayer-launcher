@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
@@ -7,15 +7,14 @@
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
-    <VersionPrefix>1.1.0</VersionPrefix>
+    <VersionPrefix>1.2.0</VersionPrefix>
   </PropertyGroup>
 
   <!--
-    Jellyfin 程序集 / NuGet 包引用, 以及 JellyfinDir、EnableJellyfinDlls、包版本
-    都集中在同目录的 Directory.Build.props。
-  -->
+    Jellyfin 绋嬪簭闆?/ NuGet 鍖呭紩鐢? 浠ュ強 JellyfinDir銆丒nableJellyfinDlls銆佸寘鐗堟湰
+    閮介泦涓湪鍚岀洰褰曠殑 Directory.Build.props銆?  -->
 
-  <!-- 测试工程有自己的 csproj, 不要被插件的默认通配符一起编译 -->
+  <!-- 娴嬭瘯宸ョ▼鏈夎嚜宸辩殑 csproj, 涓嶈琚彃浠剁殑榛樿閫氶厤绗︿竴璧风紪璇?-->
   <ItemGroup>
     <Compile Remove="tests\**" />
     <None Remove="tests\**" />
