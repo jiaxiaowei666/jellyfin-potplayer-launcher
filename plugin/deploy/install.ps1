@@ -107,7 +107,8 @@ if ($Package) {
 
     Copy-Item (Join-Path $deployDir "meta.json") (Join-Path $distDir "meta.json") -Force
     if ($CopyDllToDist) {
-        # CI 用: dist\ 自成一套上传内容, 上传路径只写 dist/* 即可(解压后就是三个文件, 没有子目录)
+        # CI use: dist\ is a self-contained upload set, so CI can upload just dist/*
+        # (extracting the artifact then yields exactly three files, no subfolders)
         Copy-Item $sourceDll (Join-Path $distDir $dllName) -Force
     }
 

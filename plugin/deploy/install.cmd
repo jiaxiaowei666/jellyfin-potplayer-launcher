@@ -1,7 +1,9 @@
 @echo off
-rem 双击即可构建并安装插件到默认 Jellyfin 数据目录。
-rem 需要自定义数据目录时, 在 PowerShell 里执行:
+rem Double-click to build and install the plugin into the default Jellyfin data directory.
+rem For a custom data directory, run this from PowerShell instead:
 rem   powershell -ExecutionPolicy Bypass -File .\install.ps1 -DataDir "D:\JellyfinData"
+rem
+rem Note: install.ps1 re-runs itself under pwsh (PowerShell 7) when that is installed.
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0install.ps1" %*
 echo.
 pause
