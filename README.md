@@ -210,10 +210,10 @@ PotPlayerLauncher launched PotPlayer for "..." (pid=19816 startSec=0   seek="<no
 
 ```powershell
 cd plugin/tests
-.\run-tests.ps1          # 41 项检查, 约 30 秒, 不会弹出真实播放器
+.\run-tests.ps1          # 60 项检查, 约 1 分钟, 不会弹出真实播放器
 ```
 
-覆盖协议契约（握手、鉴权、Origin 白名单、CORS 预检、参数校验、旧接口兼容、中文路径、端口冲突降级）。
+覆盖协议契约（握手、鉴权、Origin 白名单、CORS 预检、参数校验、旧接口兼容、中文路径、端口冲突降级、播放位置探针及其降级路径）。
 测试用 `.cmd` 记录器替换播放器，因此能断言插件真正传给播放器的命令行参数（例如续播的 `/seek=00:05:00`）。
 
 没装 Jellyfin 的机器（或 CI）加一个参数即可改用 NuGet 包构建：
@@ -221,6 +221,9 @@ cd plugin/tests
 ```powershell
 .\run-tests.ps1 -EnableJellyfinDlls
 ```
+
+> **脚本引擎**：`.ps1` 在检测到 PowerShell 7 时会自动用 `pwsh` 重跑自己（7 能正确读取无 BOM 的 UTF-8，报错信息也清楚得多）；
+> 没装 7 也能跑——脚本刻意只用 ASCII，所以在 Windows PowerShell 5.1 下不会乱码。两条路径都实测过。
 
 ## 持续集成
 

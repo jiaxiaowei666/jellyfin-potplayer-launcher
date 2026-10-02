@@ -1,4 +1,4 @@
-# jellyfin-potplayer-launcher
+﻿# jellyfin-potplayer-launcher
 
 [![build-and-test](https://github.com/jiaxiaowei666/jellyfin-potplayer-launcher/actions/workflows/ci.yml/badge.svg)](https://github.com/jiaxiaowei666/jellyfin-potplayer-launcher/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -203,7 +203,7 @@ PotPlayerLauncher launched PotPlayer for "..." (pid=19816 startSec=0   seek="<no
 
 ```powershell
 cd plugin/tests
-.\run-tests.ps1          # 41 checks, ~30s, never opens a real player
+.\run-tests.ps1          # 60 checks, ~1 min, never opens a real player
 ```
 
 The suite drives a real `HttpListener` over HTTP and covers the protocol contract in

@@ -8,6 +8,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- `run-tests.ps1` / `install.ps1` 增加脚本引擎守卫：检测到 PowerShell 7 时自动用 `pwsh` 重跑自己（7 能正确读取无 BOM 的 UTF-8，诊断信息也更清楚）；未安装 7 时打印提示并继续在 Windows PowerShell 5.1 下运行。脚本保持纯 ASCII，因此两条路径都不会出现编码乱码。
+
 ## [1.2.0] - 2026-10-02
 
 **精确进度**：不再只靠"进程存活时长"估算，改为向 PotPlayer 窗口索取实时播放位置。协议仍为 `version: 2`（字段与状态码未变）。

@@ -45,8 +45,36 @@ param(
     [string]$Configuration = "Release",
     [switch]$Package,
     [switch]$CopyDllToDist,
-    [switch]$EnableJellyfinDlls
+    [switch]$EnableJellyfinDlls,
+    [switch]$NoRelaunch
 )
+
+# ---------------------------------------------------------------------------
+# Engine guard (same reasoning as in tests/run-tests.ps1):
+# Windows PowerShell 5.1 reads .ps1 files without a BOM as ANSI, which garbles any
+# non-ASCII text - this script is therefore ASCII-only. When PowerShell 7 is present
+# we re-run under it for correct UTF-8 handling and better diagnostics; when it is
+# not, we just carry on (no hard dependency on PowerShell 7).
+# ---------------------------------------------------------------------------
+if (-not $NoRelaunch -and $PSVersionTable.PSEdition -ne "Core") {
+    $pwsh7 = Get-Command pwsh -ErrorAction SilentlyContinue
+    if ($pwsh7) {
+        Write-Host "Windows PowerShell $($PSVersionTable.PSVersion): re-running under pwsh (PowerShell 7)" -ForegroundColor DarkGray
+        $relaunch = @(
+            "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $PSCommandPath, "-NoRelaunch",
+            "-DataDir", $DataDir, "-Configuration", $Configuration
+        )
+        if ($JellyfinDir) { $relaunch += @("-JellyfinDir", $JellyfinDir) }
+        if ($Package) { $relaunch += "-Package" }
+        if ($CopyDllToDist) { $relaunch += "-CopyDllToDist" }
+        if ($EnableJellyfinDlls) { $relaunch += "-EnableJellyfinDlls" }
+        & $pwsh7.Source @relaunch
+        exit $LASTEXITCODE
+    }
+
+    Write-Host "NOTE: running on Windows PowerShell $($PSVersionTable.PSVersion); PowerShell 7 (pwsh) not found." -ForegroundColor DarkYellow
+    Write-Host "      This script is ASCII-only so it works here, but install PowerShell 7 for a better experience." -ForegroundColor DarkYellow
+}
 
 $ErrorActionPreference = "Stop"
 

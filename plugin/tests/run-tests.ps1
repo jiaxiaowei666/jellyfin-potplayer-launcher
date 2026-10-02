@@ -31,8 +31,35 @@
 [CmdletBinding()]
 param(
     [string]$JellyfinDir = "",
-    [switch]$EnableJellyfinDlls
+    [switch]$EnableJellyfinDlls,
+    [switch]$NoRelaunch
 )
+
+# ---------------------------------------------------------------------------
+# Engine guard.
+#
+# Windows PowerShell 5.1 (the inbox engine) reads .ps1 files WITHOUT a BOM as ANSI,
+# which turns any non-ASCII text in this file into mojibake - and, depending on the
+# bytes, into syntax errors. This script is therefore intentionally ASCII-only.
+#
+# If PowerShell 7 is installed we re-run ourselves under it: it reads UTF-8 without a
+# BOM correctly and gives far better diagnostics. Missing pwsh is not an error - the
+# script still works on 5.1, so CI and bare machines do not need PowerShell 7.
+# ---------------------------------------------------------------------------
+if (-not $NoRelaunch -and $PSVersionTable.PSEdition -ne "Core") {
+    $pwsh7 = Get-Command pwsh -ErrorAction SilentlyContinue
+    if ($pwsh7) {
+        Write-Host "Windows PowerShell $($PSVersionTable.PSVersion): re-running under pwsh (PowerShell 7)" -ForegroundColor DarkGray
+        $relaunch = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $PSCommandPath, "-NoRelaunch")
+        if ($JellyfinDir) { $relaunch += @("-JellyfinDir", $JellyfinDir) }
+        if ($EnableJellyfinDlls) { $relaunch += "-EnableJellyfinDlls" }
+        & $pwsh7.Source @relaunch
+        exit $LASTEXITCODE
+    }
+
+    Write-Host "NOTE: running on Windows PowerShell $($PSVersionTable.PSVersion); PowerShell 7 (pwsh) not found." -ForegroundColor DarkYellow
+    Write-Host "      This script is ASCII-only so it works here, but install PowerShell 7 for a better experience." -ForegroundColor DarkYellow
+}
 
 $ErrorActionPreference = "Stop"
 $testsDir = $PSScriptRoot
