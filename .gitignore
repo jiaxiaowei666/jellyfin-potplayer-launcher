@@ -12,6 +12,9 @@ dist/
 # 部署时生成的文件 (含本次启动的临时 token, 不要提交)
 listener-token.txt
 
+# 油猴脚本测试按需安装的 jsdom
+node_modules/
+
 # 编辑器/系统
 .idea/
 .DS_Store

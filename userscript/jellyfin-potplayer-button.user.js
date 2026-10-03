@@ -1,8 +1,8 @@
-﻿// ==UserScript==
+// ==UserScript==
 // @name         Jellyfin Local PotPlayer Button
 // @name:zh-CN   Jellyfin 本地 PotPlayer 按钮
 // @namespace    https://github.com/jiaxiaowei666/jellyfin-potplayer-launcher
-// @version      1.0.0
+// @version      1.1.0
 // @description  Play in local PotPlayer from the Jellyfin web UI: resume from the server-side position and report playback progress back (no transcoding).
 // @description:zh-CN 在 Jellyfin 详情页添加「PotPlayer」按钮：本地 PotPlayer 播放，支持续播定位，并把播放进度回传给 Jellyfin（无转码）
 // @author       Xiaowei Jia
@@ -16,6 +16,9 @@
     // ============ 配置 ============
     // 监听器地址(默认 13579;插件用 POTPLAYER_LAUNCHER_PORT 改端口时这里要同步)
     var LISTENER = "http://127.0.0.1:13579";
+
+    // 注入按钮的 id; 按钮上会记 dataset.itemId 以便识别它属于哪个条目
+    var BUTTON_ID = "local-play-btn";
 
     // 生效的 token / UserId 运行时从页面 ApiClient 会话里取, 不再硬编码。
     // 注意: 这里兜底必须填"浏览器会话 token"(登录后设备列表里那一串), 不要填控制台生成的 API 密钥 ——
@@ -352,26 +355,31 @@
             return;
         }
 
-        var existing = document.getElementById("local-play-btn");
-        if (existing) {
-            if (!existing.parentNode) {
-                existing.remove();
-            } else {
-                return;
-            }
-        }
-
-        var playBtn = document.querySelector(".mainDetailButtons .btnPlay")
-                   || document.querySelector(".detailButtons .btnPlay");
-        if (!playBtn) return;
-
         var q = location.hash.split("?")[1];
         if (!q) return;
         var id = new URLSearchParams(q).get("id");
         if (!id) return;
 
+        // Jellyfin 的详情页会复用同一套 DOM: 点"更多类似"时它把容器内容换掉,
+        // .btnPlay 等元素本身仍是同一个, 所以上一次注入的按钮不会自动消失。
+        // 只判断"按钮存在"就会一直复用一个已经过时的按钮(位置/条目都不对) ——
+        // 这就是"导航到新条目后按钮不出现, 刷新才有"的原因。
+        // 因此这里既检查存在性, 也检查它属于哪个条目。
+        var existing = document.getElementById(BUTTON_ID);
+        if (existing && existing.dataset.itemId === id && existing.isConnected !== false && existing.parentNode) {
+            return;
+        }
+
+        // 过时的按钮(换了条目/被移出文档)先清掉; 顺带清理可能重复的同类按钮
+        removeButton();
+
+        var playBtn = document.querySelector(".mainDetailButtons .btnPlay")
+                   || document.querySelector(".detailButtons .btnPlay");
+        if (!playBtn) return;
+
         var btn = document.createElement("button");
-        btn.id = "local-play-btn";
+        btn.id = BUTTON_ID;
+        btn.dataset.itemId = id;
         btn.className = playBtn.className + " emby-button";
         btn.title = "使用 PotPlayer 播放（支持续播与进度回传）";
         btn.style.cssText =
@@ -392,7 +400,7 @@
     }
 
     function removeButton() {
-        var btn = document.getElementById("local-play-btn");
+        var btn = document.getElementById(BUTTON_ID);
         if (btn) btn.remove();
     }
 
@@ -418,18 +426,28 @@
         }
     }
 
+    // 同一个详情页里换条目(点"更多类似"、选集卡片等)时 hash 可能完全不变(#/details?id=xxx 只换 id),
+    // 所以除了 MutationObserver, 也监听 history 的 popstate, 多一条触发路径。
+    function onPopState() {
+        debounce(addButton, 50);
+    }
+
     function init() {
-        // 页面会话可能稍后才就绪, 先探测一次监听器, 每次进详情页再确认
+        // 页面会话可能稍后就绪, 先探测一次监听器, 每次进详情页再确认
         detectListener();
 
         startObserver();
         window.addEventListener("hashchange", onHashChange);
+        window.addEventListener("popstate", onPopState);
         addButton();
 
         setInterval(function () {
             if (/^#!?\/details/.test(location.hash)) {
-                var btn = document.getElementById("local-play-btn");
-                if (!btn) addButton();
+                // 按钮不存在、或还挂着上一个条目的 id(详情页 DOM 复用), 都要重新注入
+                var btn = document.getElementById(BUTTON_ID);
+                var q = location.hash.split("?")[1];
+                var id = q ? new URLSearchParams(q).get("id") : null;
+                if (!btn || (id && btn.dataset.itemId !== id)) addButton();
             }
             if (!hasSession()) return;
             if (!listenerChecked) detectListener();

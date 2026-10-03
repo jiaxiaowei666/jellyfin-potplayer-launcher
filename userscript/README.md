@@ -1,4 +1,4 @@
-﻿# Jellyfin Local PotPlayer Button (userscript)
+# Jellyfin Local PotPlayer Button (userscript)
 
 在 Jellyfin 网页详情页注入一个 **▶ PotPlayer** 按钮：本地播放，并且**把播放进度回传给 Jellyfin**（续播、播放次数、继续观看都正常）。
 
@@ -51,6 +51,22 @@ var UPDATE_LAST_PLAYED_DATE = true;
 - 只匹配 `http://localhost:8096/*` 和 `http://127.0.0.1:8096/*`。端口不是 8096、或用局域网 IP 访问时，需要自行修改 `@match`（局域网 IP 还会被插件的 Origin 白名单拒绝）。
 - 允许非 8096 端口的本机来源，但脚本的 `@match` 得你自己加上。
 - 插件是旧版本（没有 `/token` 接口）时，脚本会自动退回旧的 `GET /play?path=` 方式：能播放，但没有进度回传，会提示"旧版插件"。
+
+## 测试
+
+```powershell
+cd userscript/tests
+.\run-tests.ps1        # 9 项检查; 首次会自动把 jsdom 装进 node_modules(已 gitignore)
+```
+
+用真实 DOM（jsdom）加载本脚本，覆盖 Jellyfin 客户端路由下的按钮行为，重点是：
+
+- **详情页 DOM 复用**：点"更多类似"切到另一个条目时按钮必须跟着换（这是曾经的 bug —— 旧按钮残留导致必须刷新页面才出现）
+- 同一条目重绘不会产生重复按钮
+- 容器整体重绘后由 MutationObserver 补回
+- 离开详情页后按钮被移除
+
+需要 Node.js 与 npm；CI 里也跑（`.github/workflows/ci.yml` 的 `userscript tests (jsdom)`）。
 
 ## 排错
 

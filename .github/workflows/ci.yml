@@ -61,6 +61,25 @@ jobs:
         shell: pwsh
         run: Get-Content dist/SHA256SUMS.txt | Tee-Object -FilePath $env:GITHUB_STEP_SUMMARY
 
+  # 油猴脚本: 用 jsdom 跑真实 DOM 下的按钮注入测试。
+  # 专门防"详情页 DOM 复用导致按钮不出现"(点"更多类似"后需要刷新)这类回归。
+  userscript:
+    name: userscript tests (jsdom)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: userscript/tests
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Run button-injection tests
+        shell: pwsh
+        run: ./run-tests.ps1
+
   # Linux: 只验证编译, 用来尽早发现宿主 API 变化 / 目标框架漂移。
   # 插件运行期依赖 Windows(桌面播放器 + Windows 路径), 所以这里不跑测试。
   build-linux:
