@@ -16,8 +16,9 @@
   现在按钮上记录 `dataset.itemId`，只有"存在 **且** 属于当前条目 **且** 仍在文档中"才跳过；
   另外补了 `popstate` 监听，定时兜底检查也校验条目是否匹配。脚本版本升到 `1.1.0`。
 
-### Added
+### Changed
 
+- CI 用的 action 升级到当前 major：`checkout` v4→v7、`setup-dotnet` v4→v6、`setup-node` v4→v7、`upload-artifact` v4→v7。这消除了 GitHub 的 "Node.js 20 is deprecated" 警告（原先 `checkout@v4` / `setup-node@v4` 被强制跑在 Node 24 上）。三个 job 均已验证通过。
 - `run-tests.ps1` / `install.ps1` 增加脚本引擎守卫：检测到 PowerShell 7 时自动用 `pwsh` 重跑自己（7 能正确读取无 BOM 的 UTF-8，诊断信息也更清楚）；未安装 7 时打印提示并继续在 Windows PowerShell 5.1 下运行。脚本保持纯 ASCII，因此两条路径都不会出现编码乱码。
 
 ## [1.2.0] - 2026-10-02
