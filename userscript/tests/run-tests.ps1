@@ -31,6 +31,12 @@ foreach ($tool in "node", "npm") {
     if (-not (Get-Command $tool -ErrorAction SilentlyContinue)) { throw "$tool not found on PATH" }
 }
 
+# Recent jsdom needs Node 22+ (its undici dependency fails to load on Node 20).
+$nodeMajor = [int](& node -p "process.versions.node.split('.')[0]")
+if ($nodeMajor -lt 22) {
+    throw "Node.js $nodeMajor found, but jsdom requires Node 22 or newer. Please upgrade Node."
+}
+
 # Note: Node resolves require() from the SCRIPT's directory, so jsdom must live in
 # <testsDir>\node_modules (not in some other folder we happen to run from).
 $jsdom = Join-Path $testsDir "node_modules\jsdom"

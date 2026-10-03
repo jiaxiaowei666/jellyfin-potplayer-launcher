@@ -72,9 +72,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Node 22+: recent jsdom depends on undici, which fails to load on Node 20
+      # ("webidl.util.markAsUncloneable is not a function").
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
 
       - name: Run button-injection tests
         shell: pwsh
